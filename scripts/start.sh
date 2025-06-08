@@ -7,65 +7,22 @@ cd /var/www/html
 # Wait a moment for file system to be ready
 sleep 2
 
-# Create .env file if it doesn't exist
+# Create .env file if it doesn't exist (backup in case Docker didn't create it)
 if [ ! -f ".env" ]; then
     echo "==> Creating .env file..."
-    if [ -f ".env.example" ]; then
-        cp .env.example .env
-        echo "==> Copied .env from .env.example"
-    else
-        echo "==> Creating basic .env file..."
-        cat > .env << 'EOF'
+    cat > .env << 'EOF'
 APP_NAME=Laravel
 APP_ENV=production
 APP_KEY=
 APP_DEBUG=false
 APP_URL=http://localhost
-
 LOG_CHANNEL=stderr
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
-
 DB_CONNECTION=sqlite
 DB_DATABASE=/var/www/html/database/database.sqlite
-
-BROADCAST_DRIVER=log
 CACHE_DRIVER=file
-FILESYSTEM_DRIVER=local
-QUEUE_CONNECTION=sync
 SESSION_DRIVER=file
-SESSION_LIFETIME=120
-
-MEMCACHED_HOST=127.0.0.1
-
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MAIL_MAILER=smtp
-MAIL_HOST=mailhog
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS=null
-MAIL_FROM_NAME="${APP_NAME}"
-
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=
-AWS_USE_PATH_STYLE_ENDPOINT=false
-
-PUSHER_APP_ID=
-PUSHER_APP_KEY=
-PUSHER_APP_SECRET=
-PUSHER_APP_CLUSTER=mt1
-
-MIX_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
-MIX_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+QUEUE_CONNECTION=sync
 EOF
-    fi
     echo "==> .env file created successfully"
 fi
 
@@ -84,7 +41,20 @@ fi
 
 # Generate application key if not set
 echo "==> Generating application key..."
-php artisan key:generate --force
+# Check if APP_KEY is empty in .env file
+if ! grep -q "APP_KEY=base64:" .env; then
+    echo "==> APP_KEY not found or empty, generating new key..."
+    php artisan key:generate --force --no-interaction
+    if [ $? -ne 0 ]; then
+        echo "==> Key generation failed, trying alternative method..."
+        # Generate key manually and add to .env
+        APP_KEY=$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")
+        sed -i "s/APP_KEY=/APP_KEY=$APP_KEY/" .env
+        echo "==> Application key set manually: $APP_KEY"
+    fi
+else
+    echo "==> APP_KEY already exists in .env file"
+fi
 
 # Run database migrations
 echo "==> Running migrations..."

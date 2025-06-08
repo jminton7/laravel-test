@@ -29,6 +29,19 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Create a basic .env file
+RUN echo "APP_NAME=Laravel" > .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_KEY=" >> .env && \
+    echo "APP_DEBUG=false" >> .env && \
+    echo "APP_URL=http://localhost" >> .env && \
+    echo "LOG_CHANNEL=stderr" >> .env && \
+    echo "DB_CONNECTION=sqlite" >> .env && \
+    echo "DB_DATABASE=/var/www/html/database/database.sqlite" >> .env && \
+    echo "CACHE_DRIVER=file" >> .env && \
+    echo "SESSION_DRIVER=file" >> .env && \
+    echo "QUEUE_CONNECTION=sync" >> .env
+
 # Create SQLite database file if it doesn't exist
 RUN mkdir -p /var/www/html/database && touch /var/www/html/database/database.sqlite
 
