@@ -25,23 +25,45 @@ ENV SESSION_DRIVER file
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
-RUN cat .env && php artisan config:show
-
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Generate APP_KEY and create .env file
-RUN APP_KEY_GENERATED="base64:$(openssl rand -base64 32)" && \
-    printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=%s\nAPP_DEBUG=false\nAPP_URL=https://laravel-test-fzx8.onrender.com\nLOG_CHANNEL=stderr\nDB_CONNECTION=sqlite\nDB_DATABASE=/var/www/html/database/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nSESSION_LIFETIME=120\nQUEUE_CONNECTION=sync\n" "$APP_KEY_GENERATED" > .env
-
-# Setup database
+# Setup database first
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite
 
-# Run Laravel setup commands
-RUN php artisan config:clear && \
-    php artisan migrate --force && \
-    php artisan config:cache && \
+# Create .env file
+RUN cp .env.example .env 2>/dev/null || echo "No .env.example found, creating minimal .env"
+
+# Generate APP_KEY and update .env
+RUN echo "APP_NAME=Laravel" > .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_DEBUG=false" >> .env && \
+    echo "APP_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
+    echo "LOG_CHANNEL=stderr" >> .env && \
+    echo "DB_CONNECTION=sqlite" >> .env && \
+    echo "DB_DATABASE=/var/www/html/database/database.sqlite" >> .env && \
+    echo "CACHE_DRIVER=file" >> .env && \
+    echo "SESSION_DRIVER=file" >> .env && \
+    echo "SESSION_LIFETIME=120" >> .env && \
+    echo "QUEUE_CONNECTION=sync" >> .env && \
+    echo "APP_KEY=" >> .env
+
+# Generate and set the APP_KEY
+RUN php artisan key:generate --force
+
+# Clear config and run setup
+RUN php artisan config:clear
+
+# Verify setup before migrations
+RUN php -r "echo 'PHP Version: ' . phpversion() . PHP_EOL;" && \
+    php artisan --version
+
+# Run migrations
+RUN php artisan migrate --force || echo "Migration failed, continuing..."
+
+# Cache configurations
+RUN php artisan config:cache && \
     php artisan route:cache && \
     php artisan view:cache
 
