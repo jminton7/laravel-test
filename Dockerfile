@@ -6,6 +6,8 @@ RUN apk add --no-cache nodejs npm
 # Copy application files
 COPY . /var/www/html
 
+RUN sed -i 's/\*\*DIR\*\*/__DIR__/g' /var/www/html/routes/web.php
+
 RUN mkdir -p /var/www/html/app/Providers && \
     echo '<?php' > /var/www/html/app/Providers/AppServiceProvider.php && \
     echo 'namespace App\Providers;' >> /var/www/html/app/Providers/AppServiceProvider.php && \
