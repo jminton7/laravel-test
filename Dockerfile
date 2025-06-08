@@ -25,24 +25,33 @@ ENV SESSION_DRIVER file
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
+RUN cat .env && php artisan config:show
+
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Create .env file with file sessions
-RUN printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP_URL=https://laravel-test-fzx8.onrender.com\nLOG_CHANNEL=stderr\nDB_CONNECTION=sqlite\nDB_DATABASE=/var/www/html/database/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nSESSION_LIFETIME=120\nQUEUE_CONNECTION=sync\n" > .env
+# Generate APP_KEY and create .env file
+RUN APP_KEY_GENERATED="base64:$(openssl rand -base64 32)" && \
+    printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=%s\nAPP_DEBUG=false\nAPP_URL=https://laravel-test-fzx8.onrender.com\nLOG_CHANNEL=stderr\nDB_CONNECTION=sqlite\nDB_DATABASE=/var/www/html/database/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nSESSION_LIFETIME=120\nQUEUE_CONNECTION=sync\n" "$APP_KEY_GENERATED" > .env
 
-# Setup database and generate key
+# Setup database
 RUN mkdir -p /var/www/html/database && \
-    touch /var/www/html/database/database.sqlite && \
-    APP_KEY="base64:$(openssl rand -base64 32)" && \
-    sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env && \
-    php artisan config:clear && \
-    php artisan config:cache
+    touch /var/www/html/database/database.sqlite
 
-# Set permissions including storage/framework/sessions
+# Run Laravel setup commands
+RUN php artisan config:clear && \
+    php artisan migrate --force && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
+
+# Set permissions
 RUN chown -R nginx:nginx /var/www/html && \
     chmod -R 755 /var/www/html/storage && \
     chmod -R 755 /var/www/html/bootstrap/cache && \
     chmod 664 /var/www/html/database/database.sqlite && \
     mkdir -p /var/www/html/storage/framework/sessions && \
     chmod -R 755 /var/www/html/storage/framework/sessions
+
+# Expose port
+EXPOSE 80
