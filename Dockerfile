@@ -9,12 +9,29 @@ COPY . /var/www/html
 # Set working directory
 WORKDIR /var/www/html
 
+# Fix nginx-php-fpm socket configuration
+RUN echo 'server {' > /etc/nginx/sites-available/default && \
+    echo '    listen 80 default_server;' >> /etc/nginx/sites-available/default && \
+    echo '    root /var/www/html/public;' >> /etc/nginx/sites-available/default && \
+    echo '    index index.php index.html;' >> /etc/nginx/sites-available/default && \
+    echo '    server_name _;' >> /etc/nginx/sites-available/default && \
+    echo '    location / {' >> /etc/nginx/sites-available/default && \
+    echo '        try_files $uri $uri/ /index.php?$query_string;' >> /etc/nginx/sites-available/default && \
+    echo '    }' >> /etc/nginx/sites-available/default && \
+    echo '    location ~ \.php$ {' >> /etc/nginx/sites-available/default && \
+    echo '        fastcgi_pass 127.0.0.1:9000;' >> /etc/nginx/sites-available/default && \
+    echo '        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;' >> /etc/nginx/sites-available/default && \
+    echo '        include fastcgi_params;' >> /etc/nginx/sites-available/default && \
+    echo '    }' >> /etc/nginx/sites-available/default && \
+    echo '}' >> /etc/nginx/sites-available/default
+
 # Image config
 ENV SKIP_COMPOSER 0
 ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1
 ENV RUN_SCRIPTS 1
 ENV REAL_IP_HEADER 1
+
 
 # Laravel config with file sessions
 ENV APP_ENV production
