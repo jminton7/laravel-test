@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 echo "==> Starting Laravel application..."
 
 # Set working directory
@@ -7,6 +6,18 @@ cd /var/www/html
 
 # Wait a moment for file system to be ready
 sleep 2
+
+# Check if vendor directory exists, if not install dependencies
+if [ ! -d "vendor" ]; then
+    echo "==> Installing Composer dependencies..."
+    composer install --no-dev --optimize-autoloader --no-interaction
+fi
+
+# Create SQLite database if it doesn't exist
+if [ ! -f "/var/www/html/database/database.sqlite" ]; then
+    echo "==> Creating SQLite database..."
+    touch /var/www/html/database/database.sqlite
+fi
 
 # Generate application key if not set
 echo "==> Generating application key..."
@@ -30,5 +41,5 @@ chmod -R 755 /var/www/html/bootstrap/cache
 chmod 664 /var/www/html/database/database.sqlite
 
 echo "==> Starting nginx and php-fpm..."
-# Start the original start script
+# Start the original start script from the base image
 exec /start.sh
