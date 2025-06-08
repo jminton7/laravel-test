@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\BookController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -11,6 +12,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+    Route::get('/books', [BookController::class, 'index'])->name('books.index');
 });
 
 require __DIR__.'/settings.php';
