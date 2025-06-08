@@ -1,38 +1,34 @@
+#!/usr/bin/env bash
 
-#!/usr/bin/env bashAdd commentMore actions
+echo "==> Starting Laravel application..."
 
+# Set working directory
+cd /var/www/html
 
-echo "Running composer"
+# Wait a moment for file system to be ready
+sleep 2
 
+# Generate application key if not set
+echo "==> Generating application key..."
+php artisan key:generate --force
 
-composer global require hirak/prestissimo
-
-
-composer install --no-dev --working-dir=/var/www/html
-
-
-
-
-
-echo "Caching config..."
-
-
-php artisan config:cache
-
-
-
-
-
-echo "Caching routes..."
-
-
-php artisan route:cache
-
-
-
-
-
-echo "Running migrations..."
-
-
+# Run database migrations
+echo "==> Running migrations..."
 php artisan migrate --force
+
+# Cache configuration for better performance
+echo "==> Caching configuration..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Set proper permissions
+echo "==> Setting permissions..."
+chown -R nginx:nginx /var/www/html
+chmod -R 755 /var/www/html/storage
+chmod -R 755 /var/www/html/bootstrap/cache
+chmod 664 /var/www/html/database/database.sqlite
+
+echo "==> Starting nginx and php-fpm..."
+# Start the original start script
+exec /start.sh
