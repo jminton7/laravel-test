@@ -35,11 +35,12 @@ RUN printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP
 # Create SQLite database file if it doesn't exist
 RUN mkdir -p /var/www/html/database && touch /var/www/html/database/database.sqlite
 
-# Set proper permissions
+# Set proper permissions (including .env file)
 RUN chown -R nginx:nginx /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache \
-    && chmod 664 /var/www/html/database/database.sqlite
+    && chmod 664 /var/www/html/database/database.sqlite \
+    && chmod 664 /var/www/html/.env
 
 # Copy the custom start script from the correct path
 COPY scripts/start.sh /usr/local/bin/start-laravel.sh

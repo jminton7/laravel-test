@@ -41,41 +41,45 @@ fi
 
 # Generate application key if not set
 echo "==> Generating application key..."
+
+# Debug: Show current working directory and .env file info
+echo "==> Current directory: $(pwd)"
+echo "==> .env file exists: $(test -f .env && echo 'YES' || echo 'NO')"
+echo "==> .env file permissions: $(ls -la .env 2>/dev/null || echo 'File not found')"
+echo "==> .env file contents before key generation:"
+cat .env
+
 # Check if APP_KEY is empty in .env file
 if ! grep -q "APP_KEY=base64:" .env; then
     echo "==> APP_KEY not found or empty, generating new key..."
     
-    # Try the standard artisan command first
-    if php artisan key:generate --force --no-interaction 2>/dev/null; then
-        echo "==> Application key generated successfully with artisan"
+    # Generate key manually since artisan seems to have issues
+    echo "==> Generating key manually with openssl..."
+    APP_KEY="base64:$(openssl rand -base64 32)"
+    
+    # Replace the empty APP_KEY in .env file
+    if grep -q "APP_KEY=" .env; then
+        sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+        echo "==> Replaced existing APP_KEY line"
     else
-        echo "==> Artisan key:generate failed, generating key manually..."
-        # Generate a 32-byte random key and encode it
-        APP_KEY="base64:$(openssl rand -base64 32)"
-        
-        # Replace the empty APP_KEY in .env file
-        if grep -q "APP_KEY=" .env; then
-            sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
-        else
-            echo "APP_KEY=$APP_KEY" >> .env
-        fi
-        
-        echo "==> Application key set manually: $APP_KEY"
-        
-        # Verify the key was set
-        if grep -q "$APP_KEY" .env; then
-            echo "==> Key verification successful"
-        else
-            echo "==> ERROR: Key verification failed"
-        fi
+        echo "APP_KEY=$APP_KEY" >> .env
+        echo "==> Added new APP_KEY line"
+    fi
+    
+    echo "==> Application key set manually: $APP_KEY"
+    
+    # Verify the key was set
+    echo "==> .env file contents after key generation:"
+    cat .env
+    
+    if grep -q "$APP_KEY" .env; then
+        echo "==> Key verification successful"
+    else
+        echo "==> ERROR: Key verification failed"
     fi
 else
     echo "==> APP_KEY already exists in .env file"
 fi
-
-# Show current APP_KEY status
-echo "==> Current APP_KEY in .env:"
-grep "APP_KEY=" .env || echo "No APP_KEY found"
 
 # Run database migrations
 echo "==> Running migrations..."
