@@ -44,17 +44,38 @@ echo "==> Generating application key..."
 # Check if APP_KEY is empty in .env file
 if ! grep -q "APP_KEY=base64:" .env; then
     echo "==> APP_KEY not found or empty, generating new key..."
-    php artisan key:generate --force --no-interaction
-    if [ $? -ne 0 ]; then
-        echo "==> Key generation failed, trying alternative method..."
-        # Generate key manually and add to .env
-        APP_KEY=$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")
-        sed -i "s/APP_KEY=/APP_KEY=$APP_KEY/" .env
+    
+    # Try the standard artisan command first
+    if php artisan key:generate --force --no-interaction 2>/dev/null; then
+        echo "==> Application key generated successfully with artisan"
+    else
+        echo "==> Artisan key:generate failed, generating key manually..."
+        # Generate a 32-byte random key and encode it
+        APP_KEY="base64:$(openssl rand -base64 32)"
+        
+        # Replace the empty APP_KEY in .env file
+        if grep -q "APP_KEY=" .env; then
+            sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+        else
+            echo "APP_KEY=$APP_KEY" >> .env
+        fi
+        
         echo "==> Application key set manually: $APP_KEY"
+        
+        # Verify the key was set
+        if grep -q "$APP_KEY" .env; then
+            echo "==> Key verification successful"
+        else
+            echo "==> ERROR: Key verification failed"
+        fi
     fi
 else
     echo "==> APP_KEY already exists in .env file"
 fi
+
+# Show current APP_KEY status
+echo "==> Current APP_KEY in .env:"
+grep "APP_KEY=" .env || echo "No APP_KEY found"
 
 # Run database migrations
 echo "==> Running migrations..."
