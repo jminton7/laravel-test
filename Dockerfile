@@ -1,5 +1,8 @@
 FROM richarvey/nginx-php-fpm:3.1.6
 
+# Install Node.js for Vite build
+RUN apk add --no-cache nodejs npm
+
 # Copy application files
 COPY . /var/www/html
 
@@ -25,8 +28,11 @@ ENV SESSION_DRIVER file
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Install Node dependencies and build assets
+RUN npm ci && npm run build
 
 # Setup database first
 RUN mkdir -p /var/www/html/database && \
