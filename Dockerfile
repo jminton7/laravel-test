@@ -35,7 +35,9 @@ RUN printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP
 RUN mkdir -p /var/www/html/database && \
     touch /var/www/html/database/database.sqlite && \
     APP_KEY="base64:$(openssl rand -base64 32)" && \
-    sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+    sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env && \
+    php artisan config:clear && \
+    php artisan config:cache
 
 # Set permissions including storage/framework/sessions
 RUN chown -R nginx:nginx /var/www/html && \
