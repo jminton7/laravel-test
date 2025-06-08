@@ -35,8 +35,8 @@ RUN chown -R nginx:nginx /var/www/html \
     && chmod -R 755 /var/www/html/bootstrap/cache \
     && chmod 664 /var/www/html/database/database.sqlite
 
-# Copy the custom start script
-COPY start.sh /usr/local/bin/start-laravel.sh
+# Copy the custom start script from the correct path
+COPY scripts/start.sh /usr/local/bin/start-laravel.sh
 RUN chmod +x /usr/local/bin/start-laravel.sh
 
 CMD ["/usr/local/bin/start-laravel.sh"]
