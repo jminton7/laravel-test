@@ -16,34 +16,31 @@ ENV REAL_IP_HEADER 1
 # Laravel config
 ENV APP_ENV production
 ENV APP_DEBUG false
+ENV APP_URL https://laravel-test-fzx8.onrender.com
 ENV LOG_CHANNEL stderr
 ENV DB_CONNECTION sqlite
 ENV DB_DATABASE /var/www/html/database/database.sqlite
 
-# Expose port 80 for web traffic
-EXPOSE 80
-
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
-# Install Composer dependencies
+# Install dependencies and setup Laravel
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Create a basic .env file with proper formatting
-RUN printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP_URL=http://localhost\nLOG_CHANNEL=stderr\nDB_CONNECTION=sqlite\nDB_DATABASE=/var/www/html/database/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nQUEUE_CONNECTION=sync\n" > .env
+# Create .env file
+RUN printf "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP_URL=https://laravel-test-fzx8.onrender.com\nLOG_CHANNEL=stderr\nDB_CONNECTION=sqlite\nDB_DATABASE=/var/www/html/database/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nQUEUE_CONNECTION=sync\n" > .env
 
-# Create SQLite database file if it doesn't exist
-RUN mkdir -p /var/www/html/database && touch /var/www/html/database/database.sqlite
+# Setup database and generate key
+RUN mkdir -p /var/www/html/database && \
+    touch /var/www/html/database/database.sqlite && \
+    APP_KEY="base64:$(openssl rand -base64 32)" && \
+    sed -i "s|APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 
-# Set proper permissions (including .env file)
-RUN chown -R nginx:nginx /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache \
-    && chmod 664 /var/www/html/database/database.sqlite \
-    && chmod 664 /var/www/html/.env
+# Set permissions
+RUN chown -R nginx:nginx /var/www/html && \
+    chmod -R 755 /var/www/html/storage && \
+    chmod -R 755 /var/www/html/bootstrap/cache && \
+    chmod 664 /var/www/html/database/database.sqlite
 
-# Copy the custom start script from the correct path
-COPY scripts/start.sh /usr/local/bin/start-laravel.sh
-RUN chmod +x /usr/local/bin/start-laravel.sh
-
-CMD ["/usr/local/bin/start-laravel.sh"]
+# Remove the custom start script - let the base image handle everything
+# The base image should automatically bind to $PORT
