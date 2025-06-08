@@ -8,6 +8,29 @@ COPY . /var/www/html
 
 RUN sed -i 's/\*\*DIR\*\*/__DIR__/g' /var/www/html/routes/web.php
 
+RUN if [ ! -f /var/www/html/routes/settings.php ]; then \
+    echo "Creating missing settings.php..." && \
+    echo "<?php" > /var/www/html/routes/settings.php && \
+    echo "// Settings routes" >> /var/www/html/routes/settings.php; \
+fi
+
+# Verify routes after everything is set up
+RUN php artisan route:clear && \
+    php artisan route:cache && \
+    echo "=== FINAL ROUTE LIST ===" && \
+    php artisan route:list | grep -E "(login|register|logout)" || echo "No auth routes found!"
+
+# Debug: Check if auth routes are loading
+RUN echo "=== CHECKING WEB.PHP AFTER FIX ===" && \
+    cat /var/www/html/routes/web.php && \
+    echo "=== CHECKING IF AUTH.PHP EXISTS ===" && \
+    ls -la /var/www/html/routes/ && \
+    echo "=== CHECKING AUTH.PHP CONTENT ===" && \
+    cat /var/www/html/routes/auth.php 2>/dev/null || echo "auth.php not found!" && \
+    echo "=== CHECKING SETTINGS.PHP ===" && \
+    cat /var/www/html/routes/settings.php 2>/dev/null || echo "settings.php not found!" && \
+    echo "=== END DEBUG ==="
+
 RUN mkdir -p /var/www/html/app/Providers && \
     echo '<?php' > /var/www/html/app/Providers/AppServiceProvider.php && \
     echo 'namespace App\Providers;' >> /var/www/html/app/Providers/AppServiceProvider.php && \
