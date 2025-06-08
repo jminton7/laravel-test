@@ -6,6 +6,21 @@ RUN apk add --no-cache nodejs npm
 # Copy application files
 COPY . /var/www/html
 
+RUN mkdir -p /var/www/html/app/Providers && \
+    echo '<?php' > /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo 'namespace App\Providers;' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo 'use Illuminate\Support\ServiceProvider;' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo 'use Illuminate\Support\Facades\URL;' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo 'class AppServiceProvider extends ServiceProvider' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '{' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '    public function boot()' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '    {' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '        if (config("app.env") === "production") {' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '            URL::forceScheme("https");' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '        }' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '    }' >> /var/www/html/app/Providers/AppServiceProvider.php && \
+    echo '}' >> /var/www/html/app/Providers/AppServiceProvider.php
+
 # Set working directory
 WORKDIR /var/www/html
 
@@ -45,6 +60,7 @@ ENV SESSION_DRIVER file
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
+ 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
@@ -64,17 +80,20 @@ RUN cp .env.example .env 2>/dev/null || echo "No .env.example found, creating mi
 # Generate APP_KEY and update .env
 RUN echo "APP_NAME=Laravel" > .env && \
     echo "APP_ENV=production" >> .env && \
-    echo "APP_DEBUG=true" >> .env && \
+    echo "APP_DEBUG=false" >> .env && \
     echo "APP_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
+    echo "ASSET_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
     echo "LOG_CHANNEL=stderr" >> .env && \
     echo "DB_CONNECTION=sqlite" >> .env && \
     echo "DB_DATABASE=/var/www/html/database/database.sqlite" >> .env && \
     echo "CACHE_DRIVER=file" >> .env && \
     echo "SESSION_DRIVER=file" >> .env && \
     echo "SESSION_LIFETIME=120" >> .env && \
+    echo "SESSION_SECURE_COOKIE=true" >> .env && \
+    echo "SESSION_SAME_SITE_COOKIE=lax" >> .env && \
     echo "QUEUE_CONNECTION=sync" >> .env && \
     echo "INERTIA_SSR_ENABLED=false" >> .env && \
-    echo "ASSET_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
+    echo "FORCE_HTTPS=true" >> .env && \
     echo "APP_KEY=" >> .env
 
 # Generate and set the APP_KEY
