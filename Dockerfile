@@ -32,7 +32,10 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node dependencies and build assets
-RUN npm ci && npm run build
+RUN npm ci --only=production && \
+    npm run build && \
+    ls -la public/build/ && \
+    cat public/build/manifest.json
 
 # Setup database first
 RUN mkdir -p /var/www/html/database && \
@@ -44,7 +47,7 @@ RUN cp .env.example .env 2>/dev/null || echo "No .env.example found, creating mi
 # Generate APP_KEY and update .env
 RUN echo "APP_NAME=Laravel" > .env && \
     echo "APP_ENV=production" >> .env && \
-    echo "APP_DEBUG=false" >> .env && \
+    echo "APP_DEBUG=true" >> .env && \
     echo "APP_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
     echo "LOG_CHANNEL=stderr" >> .env && \
     echo "DB_CONNECTION=sqlite" >> .env && \
@@ -53,6 +56,8 @@ RUN echo "APP_NAME=Laravel" > .env && \
     echo "SESSION_DRIVER=file" >> .env && \
     echo "SESSION_LIFETIME=120" >> .env && \
     echo "QUEUE_CONNECTION=sync" >> .env && \
+    echo "INERTIA_SSR_ENABLED=false" >> .env && \
+    echo "ASSET_URL=https://laravel-test-fzx8.onrender.com" >> .env && \
     echo "APP_KEY=" >> .env
 
 # Generate and set the APP_KEY
